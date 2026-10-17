@@ -1,0 +1,425 @@
+﻿<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SlipDraw — +EV & Hit-Rate Parlay Engine</title>
+  <style>
+    :root {
+      --bg-black: #0B0E14;
+      --card-dark: #131822;
+      --border-dark: #1F2737;
+      --lime-edge: #61B510;
+      --orange-boost: #F7760D;
+      --text-main: #F3F4F6;
+      --text-muted: #9CA3AF;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg-black);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+    }
+    header {
+      border-bottom: 1px solid var(--border-dark);
+      background-color: var(--card-dark);
+      position: sticky;
+      top: 0;
+      z-index: 30;
+    }
+    .nav-inner {
+      max-width: 1152px;
+      margin: 0 auto;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .logo-badge {
+      width: 36px; height: 36px; border-radius: 8px;
+      background: rgba(97, 181, 16, 0.15);
+      border: 1px solid var(--lime-edge);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; color: var(--lime-edge); font-size: 18px;
+    }
+    .brand h1 { font-size: 18px; font-weight: 800; letter-spacing: -0.02em; color: #fff; }
+    .brand h1 span { color: var(--lime-edge); }
+    .brand p { font-size: 11px; color: var(--text-muted); }
+    .status-pill {
+      font-size: 12px; padding: 4px 10px; border-radius: 999px;
+      background: var(--border-dark); color: #D1D5DB; font-weight: 600;
+    }
+    main {
+      max-width: 1152px; margin: 0 auto; padding: 24px 16px;
+      display: grid; grid-template-columns: 1fr; gap: 24px;
+    }
+    @media (min-width: 1024px) {
+      main { grid-template-columns: 360px 1fr; }
+    }
+    .card {
+      background: var(--card-dark);
+      border: 1px solid var(--border-dark);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.35);
+    }
+    .control-group { margin-bottom: 20px; }
+    .label {
+      display: block; font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.05em;
+      color: var(--text-muted); margin-bottom: 8px;
+    }
+    select, input[type="range"] { width: 100%; }
+    select {
+      background: var(--bg-black); border: 1px solid var(--border-dark);
+      border-radius: 8px; padding: 10px 12px; color: #fff; font-size: 14px;
+    }
+    .btn-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .toggle-btn {
+      padding: 8px 4px; border-radius: 8px; font-size: 12px; font-weight: 700;
+      background: var(--bg-black); border: 1px solid var(--border-dark);
+      color: #D1D5DB; cursor: pointer;
+    }
+    .toggle-btn.active {
+      background: var(--lime-edge); color: #000; border-color: var(--lime-edge);
+    }
+    .slider-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .mult-val { font-size: 18px; font-weight: 900; color: var(--orange-boost); }
+    .l10-val { font-size: 13px; font-weight: 800; color: var(--lime-edge); }
+    input[type="range"] { accent-color: var(--lime-edge); cursor: pointer; }
+    .primary-btn {
+      width: 100%; padding: 14px; border-radius: 12px;
+      background: var(--lime-edge); color: #000; font-weight: 900;
+      font-size: 14px; text-transform: uppercase; letter-spacing: 0.04em;
+      border: none; cursor: pointer;
+    }
+    .slips-list { display: flex; flex-direction: column; gap: 20px; }
+    .slip-header {
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 1px solid var(--border-dark); padding-bottom: 12px; margin-bottom: 14px;
+    }
+    .ticket-badge {
+      font-size: 11px; font-weight: 800; text-transform: uppercase;
+      padding: 3px 8px; border-radius: 4px;
+      background: rgba(97, 181, 16, 0.15); color: var(--lime-edge); margin-right: 8px;
+    }
+    .leg-row {
+      display: flex; justify-content: space-between; align-items: center;
+      background: var(--bg-black); border: 1px solid var(--border-dark);
+      border-radius: 8px; padding: 10px 14px; margin-bottom: 10px;
+    }
+    .leg-player { font-size: 14px; font-weight: 700; color: #fff; }
+    .leg-game { font-size: 12px; color: var(--text-muted); font-weight: 400; }
+    .leg-market { font-size: 12px; font-weight: 700; color: var(--lime-edge); text-transform: uppercase; margin-top: 2px; }
+    .leg-odds { font-size: 14px; font-weight: 800; color: #fff; text-align: right; }
+    .leg-meta { font-size: 11px; color: var(--text-muted); text-align: right; }
+    .copy-btn {
+      padding: 8px 14px; border-radius: 8px; background: var(--border-dark);
+      color: #fff; font-size: 12px; font-weight: 700; border: none; cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+
+  <header>
+    <div class="nav-inner">
+      <div class="brand">
+        <div class="logo-badge">SD</div>
+        <div>
+          <h1>SLIP<span>DRAW</span></h1>
+          <p>PropLine +EV & L10 Multiplier Engine</p>
+        </div>
+      </div>
+      <span id="syncStatus" class="status-pill">Board: Live Cache</span>
+    </div>
+  </header>
+
+
+  <main>
+    <section>
+      <div class="card">
+        <div class="control-group">
+          <label class="label">Target Book / Exchange</label>
+          <select id="bookSelect">
+            <option value="draftkings">DraftKings</option>
+            <option value="fanduel">FanDuel</option>
+            <option value="kalshi">Kalshi</option>
+            <option value="prizepicks">PrizePicks</option>
+          </select>
+        </div>
+
+
+        <div class="control-group">
+          <label class="label">Sport Filter</label>
+          <div class="btn-grid">
+            <button data-sport="all" class="toggle-btn sport-btn active">ALL</button>
+            <button data-sport="nfl" class="toggle-btn sport-btn">NFL</button>
+            <button data-sport="nba" class="toggle-btn sport-btn">NBA</button>
+          </div>
+        </div>
+
+
+        <div class="control-group">
+          <div class="slider-head">
+            <label class="label" style="margin:0;">Target Multiplier</label>
+            <span id="multDisplay" class="mult-val">25x (+2400)</span>
+          </div>
+          <input id="multSlider" type="range" min="3" max="300" value="25" step="1" />
+        </div>
+
+
+        <div class="control-group">
+          <label class="label">Strategy Mode</label>
+          <div class="btn-grid">
+            <button data-strat="safe_anchors" class="toggle-btn strat-btn">Safe Anchors</button>
+            <button data-strat="balanced" class="toggle-btn strat-btn active">Balanced +EV</button>
+            <button data-strat="lotto_milestones" class="toggle-btn strat-btn">Moonshot</button>
+          </div>
+        </div>
+
+
+        <div class="control-group">
+          <div class="slider-head">
+            <label class="label" style="margin:0;">Min L10 Hit Rate</label>
+            <span id="l10Display" class="l10-val">60%</span>
+          </div>
+          <input id="l10Slider" type="range" min="40" max="90" value="60" step="5" />
+        </div>
+
+
+        <button id="generateBtn" class="primary-btn">Draw Optimal Slips</button>
+      </div>
+    </section>
+
+
+    <section>
+      <div id="slipsContainer" class="slips-list"></div>
+    </section>
+  </main>
+
+
+  <script>
+    const FALLBACK_PROPS = [
+      { prop_id: '1', event_id: 'sea_atl', sport: 'nfl', away_team: 'SEA', home_team: 'ATL', player_id: 'k_walker', player_name: 'Kenneth Walker III', team_abbr: 'SEA', market: 'Rush + Rec Yds', side: 'over', fair_prob: 0.58, ev_pct: 4.8, steam_score: 78, trends: { l5: 0.8, l10: 0.8, l20: 0.75 }, context: { lineup_confirmed: true }, book: { book_key: 'draftkings', decimal_odds: 1.87, line: 84.5, tier: 'main' } },
+      { prop_id: '2', event_id: 'sea_atl', sport: 'nfl', away_team: 'SEA', home_team: 'ATL', player_id: 'jsn', player_name: 'Jaxon Smith-Njigba', team_abbr: 'SEA', market: 'Receptions', side: 'over', fair_prob: 0.61, ev_pct: 5.2, steam_score: 82, trends: { l5: 0.8, l10: 0.7, l20: 0.7 }, context: { lineup_confirmed: true }, book: { book_key: 'draftkings', decimal_odds: 1.74, line: 4.5, tier: 'main' } },
+      { prop_id: '3', event_id: 'kc_buf', sport: 'nfl', away_team: 'KC', home_team: 'BUF', player_id: 'j_allen', player_name: 'Josh Allen', team_abbr: 'BUF', market: 'Rush Yds', side: 'over', fair_prob: 0.49, ev_pct: 6.4, steam_score: 74, trends: { l5: 0.8, l10: 0.7, l20: 0.65 }, context: { lineup_confirmed: true }, book: { book_key: 'draftkings', decimal_odds: 2.20, line: 39.5, tier: 'alternate' } },
+      { prop_id: '4', event_id: 'det_min', sport: 'nfl', away_team: 'DET', home_team: 'MIN', player_id: 'j_gibbs', player_name: 'Jahmyr Gibbs', team_abbr: 'DET', market: 'Rush Yds', side: 'over', fair_prob: 0.42, ev_pct: 7.1, steam_score: 85, trends: { l5: 0.6, l10: 0.6, l20: 0.6 }, context: { lineup_confirmed: true }, book: { book_key: 'draftkings', decimal_odds: 2.55, line: 79.5, tier: 'milestone' } },
+      { prop_id: '5', event_id: 'bos_nyk', sport: 'nba', away_team: 'BOS', home_team: 'NYK', player_id: 'j_tatum', player_name: 'Jayson Tatum', team_abbr: 'BOS', market: 'Points', side: 'over', fair_prob: 0.57, ev_pct: 4.1, steam_score: 68, trends: { l5: 0.8, l10: 0.8, l20: 0.75 }, context: { lineup_confirmed: true }, book: { book_key: 'draftkings', decimal_odds: 1.85, line: 26.5, tier: 'main' } },
+      { prop_id: '6', event_id: 'lal_phx', sport: 'nba', away_team: 'LAL', home_team: 'PHX', player_id: 'a_davis', player_name: 'Anthony Davis', team_abbr: 'LAL', market: 'Rebounds', side: 'over', fair_prob: 0.51, ev_pct: 5.9, steam_score: 79, trends: { l5: 0.8, l10: 0.7, l20: 0.7 }, context: { lineup_confirmed: true }, book: { book_key: 'draftkings', decimal_odds: 2.10, line: 12.5, tier: 'alternate' } },
+      { prop_id: '7', event_id: 'den_okc', sport: 'nba', away_team: 'DEN', home_team: 'OKC', player_id: 'n_jokic', player_name: 'Nikola Jokic', team_abbr: 'DEN', market: 'Assists', side: 'over', fair_prob: 0.45, ev_pct: 8.0, steam_score: 88, trends: { l5: 0.6, l10: 0.7, l20: 0.65 }, context: { lineup_confirmed: true }, book: { book_key: 'draftkings', decimal_odds: 2.40, line: 9.5, tier: 'milestone' } }
+    ];
+
+
+    let allProps = [...FALLBACK_PROPS];
+    let selectedSport = 'all';
+    let selectedStrat = 'balanced';
+
+
+    async function loadLiveBoard() {
+      try {
+        const res = await fetch('./data/props.json', { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            allProps = data;
+            document.getElementById('syncStatus').textContent = `Board: ${data.length} Live Props`;
+          }
+        }
+      } catch (_) {}
+      renderSlips();
+    }
+
+
+    function decimalToAmerican(dec) {
+      if (dec >= 2.0) return `+${Math.round((dec - 1) * 100)}`;
+      return `${Math.round(-100 / (dec - 1))}`;
+    }
+
+
+    function scoreAndBuild() {
+      const targetMult = parseFloat(document.getElementById('multSlider').value);
+      const minL10 = parseFloat(document.getElementById('l10Slider').value) / 100;
+
+
+      const filtered = allProps.filter(p => {
+        if (selectedSport !== 'all' && p.sport !== selectedSport) return false;
+        if (p.trends.l10 < minL10) return false;
+        return true;
+      }).map(p => {
+        const implied = 1 / p.book.decimal_odds;
+        const weightedHr = (p.trends.l10 * 0.6) + (p.trends.l20 * 0.3) + (p.trends.l5 * 0.1);
+        const hrEdge = weightedHr - implied;
+        const evComp = Math.min(Math.max(p.ev_pct, 0) / 12, 1) * 100;
+        const hrComp = Math.min(Math.max((hrEdge + 0.1) / 0.35, 0), 1) * 100;
+        const edge_score = selectedStrat === 'safe_anchors'
+          ? (evComp * 0.35 + hrComp * 0.65)
+          : selectedStrat === 'lotto_milestones'
+          ? (evComp * 0.70 + hrComp * 0.30)
+          : (evComp * 0.50 + hrComp * 0.50);
+
+
+        return { ...p, edge_score: Math.round(edge_score), log_odds: Math.log(p.book.decimal_odds) };
+      }).sort((a, b) => b.edge_score - a.edge_score);
+
+
+      const targetLog = Math.log(targetMult);
+      let beam = [{ legs: [], sumLog: 0, sumEdge: 0, players: new Set(), lastIdx: -1 }];
+      let results = [];
+
+
+      for (let step = 1; step <= 7; step++) {
+        let next = [];
+        for (const state of beam) {
+          for (let i = state.lastIdx + 1; i < filtered.length; i++) {
+            const leg = filtered[i];
+            if (state.players.has(leg.player_id)) continue;
+            const sumLog = state.sumLog + leg.log_odds;
+            const players = new Set(state.players);
+            players.add(leg.player_id);
+            const candidate = { legs: [...state.legs, leg], sumLog, sumEdge: state.sumEdge + leg.edge_score, players, lastIdx: i };
+            if (step >= 2) results.push(candidate);
+            if (sumLog < targetLog * 1.25) next.push(candidate);
+          }
+        }
+        beam = next.slice(0, 80);
+      }
+
+
+      results.sort((a, b) => Math.abs(a.sumLog - targetLog) - Math.abs(b.sumLog - targetLog));
+      return results.slice(0, 2);
+    }
+
+
+    function buildDiscordString(legs, totalOdds, avgL10) {
+      const grouped = {};
+      legs.forEach(l => {
+        const key = `${l.away_team} @ ${l.home_team}`;
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(l);
+      });
+      let out = `**${legs.length}-LEG SLIP (${totalOdds.toFixed(2)}x | ${decimalToAmerican(totalOdds)})**\nAvg L10: ${avgL10}%\n\n`;
+      for (const [game, gLegs] of Object.entries(grouped)) {
+        out += `**${game}**\n`;
+        gLegs.forEach(l => {
+          out += `• ${l.player_name} (${l.team_abbr}) ${l.side === 'over' ? 'O' : 'U'} ${l.book.line} ${l.market} (${l.book.decimal_odds}x | L10: ${Math.round(l.trends.l10 * 100)}%)\n`;
+        });
+        out += `\n`;
+      }
+      return out.trim();
+    }
+
+
+    function renderSlips() {
+      const slips = scoreAndBuild();
+      const container = document.getElementById('slipsContainer');
+      container.innerHTML = '';
+
+
+      if (slips.length === 0) {
+        container.innerHTML = `<div class="card" style="text-align:center;color:var(--text-muted);">No combinations matched those filters. Try lowering Min L10 or switching Sport to ALL.</div>`;
+        return;
+      }
+
+
+      slips.forEach((slip, idx) => {
+        const totalOdds = slip.legs.reduce((acc, l) => acc * l.book.decimal_odds, 1);
+        const avgL10 = Math.round((slip.legs.reduce((acc, l) => acc + l.trends.l10, 0) / slip.legs.length) * 100);
+        const avgEv = (slip.legs.reduce((acc, l) => acc + l.ev_pct, 0) / slip.legs.length).toFixed(1);
+        const discordStr = buildDiscordString(slip.legs, totalOdds, avgL10);
+
+
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="slip-header">
+            <div>
+              <span class="ticket-badge">Ticket #${idx + 1}</span>
+              <strong style="font-size:18px;">${slip.legs.length}-Leg Parlay</strong>
+            </div>
+            <div style="text-align:right;">
+              <div class="mult-val">${totalOdds.toFixed(2)}x <span style="font-size:12px;color:var(--text-muted);">(${decimalToAmerican(totalOdds)})</span></div>
+              <div style="font-size:11px;color:var(--lime-edge);font-weight:700;">+${avgEv}% Avg Leg EV • ${avgL10}% Avg L10</div>
+            </div>
+          </div>
+
+
+          <div>
+            ${slip.legs.map(l => `
+              <div class="leg-row">
+                <div>
+                  <div class="leg-player">${l.player_name} <span class="leg-game">(${l.away_team} @ ${l.home_team})</span></div>
+                  <div class="leg-market">${l.side} ${l.book.line} ${l.market} [${l.book.tier}]</div>
+                </div>
+                <div>
+                  <div class="leg-odds">${l.book.decimal_odds.toFixed(2)}x</div>
+                  <div class="leg-meta">L10: <strong style="color:var(--lime-edge);">${Math.round(l.trends.l10 * 100)}%</strong> • EV: +${l.ev_pct}%</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+
+
+          <div style="display:flex;justify-content:flex-end;margin-top:12px;">
+            <button class="copy-btn" data-discord="${encodeURIComponent(discordStr)}">
+              📋 Copy Formatted Discord Slip
+            </button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+
+      document.querySelectorAll('.copy-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const text = decodeURIComponent(e.currentTarget.getAttribute('data-discord'));
+          navigator.clipboard.writeText(text);
+          e.currentTarget.textContent = '✅ Copied for Discord!';
+          setTimeout(() => { e.currentTarget.textContent = '📋 Copy Formatted Discord Slip'; }, 2000);
+        });
+      });
+    }
+
+
+    document.getElementById('multSlider').addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      document.getElementById('multDisplay').textContent = `${val}x (${decimalToAmerican(val)})`;
+      renderSlips();
+    });
+
+
+    document.getElementById('l10Slider').addEventListener('input', (e) => {
+      document.getElementById('l10Display').textContent = `${e.target.value}%`;
+      renderSlips();
+    });
+
+
+    document.querySelectorAll('.sport-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        selectedSport = e.currentTarget.getAttribute('data-sport');
+        document.querySelectorAll('.sport-btn').forEach(b => b.classList.remove('active'));
+        e.currentTarget.classList.add('active');
+        renderSlips();
+      });
+    });
+
+
+    document.querySelectorAll('.strat-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        selectedStrat = e.currentTarget.getAttribute('data-strat');
+        document.querySelectorAll('.strat-btn').forEach(b => b.classList.remove('active'));
+        e.currentTarget.classList.add('active');
+        renderSlips();
+      });
+    });
+
+
+    document.getElementById('generateBtn').addEventListener('click', renderSlips);
+
+
+    loadLiveBoard();
+  </script>
+</body>
+</html>
